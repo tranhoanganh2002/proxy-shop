@@ -4,6 +4,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { DatabaseModule } from './database/database.module';
 import { RedisService } from './database/redis.service';
 import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { ProxiesModule } from './modules/proxies/proxies.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { AuthModule } from './modules/auth/auth.module';
     ]),
     DatabaseModule,
     AuthModule,
+    UsersModule,
+    ProxiesModule,
   ],
   providers: [RedisService],
   exports: [RedisService],
