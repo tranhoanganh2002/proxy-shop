@@ -1,0 +1,159 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  password      String        // bcrypt hashed
+  fullName      String
+  phone         String?
+  balance       Decimal       @default(0) @db.Decimal(10, 2)
+  role          Role          @default(USER)
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  orders        Order[]
+  transactions  Transaction[]
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+model Proxy {
+  id              String        @id @default(cuid())
+  code            String        @unique
+  provider        String        // Nhà mạng
+  proxyIp         String        // Encrypted - Mã hóa
+  proxyPort       Int
+  proxyUser       String?       // Encrypted - Mã hóa
+  proxyPassword   String?       // Encrypted - Mã hóa
+  proxyDomain     String?
+  type            String        // HTTP/SOCKS5
+  price           Decimal       @db.Decimal(10, 2)
+  status          ProductStatus @default(AVAILABLE)
+  expiresAt       DateTime?
+  note            String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  orderItems      OrderItem[]
+
+  @@map("proxies")
+}
+
+model Account {
+  id              String        @id @default(cuid())
+  code            String        @unique
+  type            String        // Loại tài khoản (Facebook, Google, etc.)
+  username        String        // Encrypted - Mã hóa
+  password        String        // Encrypted - Mã hóa
+  additionalInfo  String?       // JSON encrypted - Mã hóa
+  price           Decimal       @db.Decimal(10, 2)
+  status          ProductStatus @default(AVAILABLE)
+  expiresAt       DateTime?
+  note            String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  orderItems      OrderItem[]
+
+  @@map("accounts")
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  totalAmount     Decimal     @db.Decimal(10, 2)
+  status          OrderStatus
+  encryptedData   String      @db.Text // Mã hóa thông tin đơn hàng
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  orderItems      OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id])
+  productType String   // PROXY hoặc ACCOUNT
+  proxyId     String?
+  proxy       Proxy?   @relation(fields: [proxyId], references: [id])
+  accountId   String?
+  account     Account? @relation(fields: [accountId], references: [id])
+  price       Decimal  @db.Decimal(10, 2)
+  productData String   @db.Text // Encrypted - Mã hóa thông tin sản phẩm
+  createdAt   DateTime @default(now())
+
+  @@map("order_items")
+}
+
+model Transaction {
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id])
+  amount          Decimal           @db.Decimal(10, 2)
+  type            TransactionType
+  status          TransactionStatus
+  paymentMethod   String            // VIETQR
+  paymentInfo     String?           @db.Text // QR code info
+  note            String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@map("transactions")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  action      String
+  ipAddress   String
+  userAgent   String?
+  details     String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum ProductStatus {
+  AVAILABLE
+  SOLD
+  RESERVED
+  EXPIRED
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum TransactionType {
+  DEPOSIT
+  PURCHASE
+  REFUND
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}

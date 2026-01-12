@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: proxy-shop-postgres
+    environment:
+      POSTGRES_USER: proxyshop
+      POSTGRES_PASSWORD: proxyshop_password
+      POSTGRES_DB: proxyshop
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - proxy-shop-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U proxyshop"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: proxy-shop-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - proxy-shop-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  proxy-shop-network:
+    driver: bridge
